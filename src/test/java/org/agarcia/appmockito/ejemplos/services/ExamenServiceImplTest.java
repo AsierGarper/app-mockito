@@ -2,7 +2,9 @@ package org.agarcia.appmockito.ejemplos.services;
 
 import org.agarcia.appmockito.ejemplos.Datos;
 import org.agarcia.appmockito.ejemplos.models.Examen;
+import org.agarcia.appmockito.ejemplos.repositories.ExamenRepository;
 import org.agarcia.appmockito.ejemplos.repositories.ExamenRepositoryImpl;
+import org.agarcia.appmockito.ejemplos.repositories.PreguntaRepository;
 import org.agarcia.appmockito.ejemplos.repositories.PreguntaRepositoryImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -14,6 +16,7 @@ import org.mockito.stubbing.Answer;
 
 import static org.mockito.Mockito.*;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -271,5 +274,29 @@ class ExamenServiceImplTest {
         Examen examen = service.findExamenPorNombreConPreguntas("Matematicas");
         assertEquals(5L, examen.getId());
         assertEquals("Matematicas", examen.getNombre());
+    }
+
+    @Test
+    void testSpy(){
+        ExamenRepository examenRepository = spy(ExamenRepositoryImpl.class);
+        PreguntaRepository preguntaRepository = spy(PreguntaRepositoryImpl.class);
+        ExamenService examenService = new ExamenServiceImpl(examenRepository, preguntaRepository);
+
+        List<String> preguntas = Arrays.asList("geometria");
+
+        //Para evitar la llamada real al metodo, es mejor hacer doReturn en lugar del when:
+        //when(preguntaRepository.findPreguntasPorExamenId(anyLong())).thenReturn(preguntas);
+        doReturn(preguntas).when(preguntaRepository).findPreguntasPorExamenId(anyLong());
+
+        Examen examen = examenService.findExamenPorNombreConPreguntas("Matematicas");
+
+        assertEquals(5, examen.getId());
+        assertEquals("Matematicas", examen.getNombre());
+        assertEquals(1, examen.getPreguntas().size());
+        assertTrue(examen.getPreguntas().contains("geometria"));
+
+        verify(examenRepository).findAll();
+        verify(preguntaRepository).findPreguntasPorExamenId(anyLong());
+
     }
 }
